@@ -37,5 +37,4 @@ Check changes for a domain
 ## creating one at .certspotter.json ##
 ── # python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d splunk.com
 ## no changes ##
-(venv)
 ```
