@@ -86,6 +86,20 @@ def is_changed(current_issuances,stored_issuances):
     else:
         return False, changes
 
+def sendslack(slackhook, domain, changes):
+
+    slack_data = {'text': ":lock: certificate changes have been detected for: {0}\n```{1}```\n".format(str(d),json.dumps(changes,indent=4))}
+
+    response = requests.post(
+        slackhook, data=json.dumps(slack_data),
+        headers={'Content-Type': 'application/json'}
+    )
+    if response.status_code != 200:
+        raise ValueError(
+            'Request to slack returned an error %s, the response is:\n%s'
+            % (response.status_code, response.text)
+    )
+
 
 if __name__ == "__main__":
     # grab arguments
@@ -119,13 +133,16 @@ if __name__ == "__main__":
             if ischanged:
                 update_state = True
                 print("## domain {0} has changes: ##".format(d))
+
+                if slackhook:
+                    sendslack(slackhook,d,changes)
                 for i in changes:
                     print(json.dumps(i, indent=4))
         
         if update_state:
             print("## updating state {0} ##".format(CERTSPOTTER_PATH))
             with open(CERTSPOTTER_PATH, 'w') as outfile:
-                json.dump(current_issuances, outfile)
+                json.dump(issuances, outfile)
         else:
             print("## no changes ##")
     else:
