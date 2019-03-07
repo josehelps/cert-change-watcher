@@ -89,4 +89,4 @@ Send a slack alert with a change
 python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com" -s https://hooks.slack.com/services/xxx/xxxx
 ```
 and here is an example of what it looks like:
-[example](static/slackexample.png)
+![example](static/slackexample.png)
