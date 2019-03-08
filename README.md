@@ -5,9 +5,9 @@ Sends a slack alert when it sees changes in your certificates.
 * changes in issuers
 * new certificates for subdomains
 
-an example alert:
 ![example](static/slackexample.png)
 
+----
 # Installation
 1. Get a API key from: https://sslmate.com/certspotter/
 2. `git clone https://github.com/d1vious/cert-change-watcher.git`
