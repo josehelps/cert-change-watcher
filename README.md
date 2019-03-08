@@ -29,7 +29,7 @@ provide the slack API web hook.
 
 ## Examples
 
-First run
+#### First run
 ```
 ── # python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d splunk.com
 ## seems this is our first run .. certspotter state file not present ##
@@ -38,7 +38,7 @@ First run
 ## no changes ##
 ```
 
-When a domain changes
+#### When a domain changes
 ```
 ── # python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d splunk.com
 ## domain splunk.com has changes: ##
@@ -55,7 +55,7 @@ When a domain changes
 ## updating state .certspotter.json ##
 ```
 
-When multiple domains change
+#### When multiple domains change
 
 ```
 ── # python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com"
@@ -84,7 +84,7 @@ When multiple domains change
 ## updating state .certspotter.json ##
 ```
 
-Send a slack alert with a change
+#### Send a slack alert with a change
 ```
 python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com" -s https://hooks.slack.com/services/xxx/xxxx
 ```
