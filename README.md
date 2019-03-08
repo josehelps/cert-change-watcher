@@ -1,6 +1,9 @@
 # cert-change-watcher
 Alerts when a issuer or domain changes in your certificates
 
+an example alert:
+![example](static/slackexample.png)
+
 # Installation
 1. Get a API key from: https://sslmate.com/certspotter/
 2. `git clone https://github.com/d1vious/cert-change-watcher.git`
@@ -88,5 +91,3 @@ provide the slack API web hook.
 ```
 python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com" -s https://hooks.slack.com/services/xxx/xxxx
 ```
-and here is an example of what it looks like:
-![example](static/slackexample.png)
