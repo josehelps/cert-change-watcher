@@ -3,11 +3,13 @@ import requests
 import argparse
 import json
 import os
+import re
 
 # temp file
 CERTSPOTTER_PATH = '.certspotter.json'
 
 def grab_issuances(apitoken,domain):
+    issuances = [] 
     url = "https://api.certspotter.com/v1/issuances"
     headers = {
         'Authorization': "Bearer " + apitoken,
@@ -16,7 +18,24 @@ def grab_issuances(apitoken,domain):
     payload = ""
     querystring = {"domain":domain,"expand":["dns_names","issuer"],"include_subdomains":"true"}
     response = requests.request("GET", url, data=payload, headers=headers, params=querystring)
-    return response.text
+
+
+    # store for issuances 
+    issuances = json.loads(response.text)
+
+    # grab subsequent pages
+    if response.headers['Link']:
+
+        print response.headers['Link']
+        m = re.search('</v1/issuances\?after=(\d+)\&.+', response.headers['Link'])
+        if m:
+            after = m.group(1)
+            print after
+            querystring = {"after":after, "domain":domain, "expand":["dns_names","issuer"], "include_subdomains":"true"}
+            response = requests.request("GET", url, data=payload, headers=headers, params=querystring)
+            for i in json.loads(response.text):
+                issuances.append(i)
+    return issuances
 
 def is_changed(current_issuances,stored_issuances):
     parsed_current = []
@@ -121,8 +140,7 @@ if __name__ == "__main__":
     # check if the phistank temp file has been updated recently
     if os.path.exists(CERTSPOTTER_PATH):
         for d in domains:
-            issuance = grab_issuances(apitoken,d)
-            current_issuances = json.loads(issuance)
+            current_issuances = grab_issuances(apitoken,d)
             issuances[d] = current_issuances
 
         with open(CERTSPOTTER_PATH) as f:
