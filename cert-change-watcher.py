@@ -25,12 +25,9 @@ def grab_issuances(apitoken,domain):
 
     # grab subsequent pages
     if response.headers['Link']:
-
-        print response.headers['Link']
         m = re.search('</v1/issuances\?after=(\d+)\&.+', response.headers['Link'])
         if m:
             after = m.group(1)
-            print after
             querystring = {"after":after, "domain":domain, "expand":["dns_names","issuer"], "include_subdomains":"true"}
             response = requests.request("GET", url, data=payload, headers=headers, params=querystring)
             for i in json.loads(response.text):
@@ -167,8 +164,7 @@ if __name__ == "__main__":
         print "## seems this is our first run .. certspotter state file not present ##"
         print "## creating one at {0} ##".format(CERTSPOTTER_PATH)
         for d in domains:
-            issuance = grab_issuances(apitoken,d)
-            current_issuances = json.loads(issuance)
+            current_issuances = grab_issuances(apitoken,d)
             issuances[d] = current_issuances
 
         with open(CERTSPOTTER_PATH, 'w') as outfile:
