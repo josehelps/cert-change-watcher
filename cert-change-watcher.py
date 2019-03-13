@@ -12,7 +12,6 @@ def update_issuances(apitoken,domain,stored_issuances):
     cert = stored_issuances[-1]
     last_id = cert['id']
 
-    print ("Last ID ", last_id)
     issuances = grab_issuances(apitoken,domain,last_id)
 
     return issuances
@@ -26,12 +25,11 @@ def grab_issuances(apitoken,domain, last_id):
     }
     payload = ""
     if last_id:
-        print ("last ID present running from ", last_id)
         querystring = {"after":last_id, "domain":domain, "expand":["dns_names","issuer"], "include_subdomains":"true"}
     else:
         querystring = {"domain":domain,"expand":["dns_names","issuer"],"include_subdomains":"true"}
 
-    print ("final query string ", querystring)
+    print ("grabbing issuance for {0} with query string {1}".format(domain, querystring))
     response = requests.request("GET", url, data=payload, headers=headers, params=querystring)
 
 
@@ -107,29 +105,27 @@ if __name__ == "__main__":
                 print("## domain {0} has changes: ##".format(d))
                 print(json.dumps(current_issuances, indent=4))
             
+                # send slack notification 
                 if slackhook:
-                    sendslack(slackhook,d,issuances)
-                for i in issuances:
-                    print(json.dumps(i, indent=4))
+                    sendslack(slackhook,d,current_issuances)
+
                 issuances[d] = current_issuances
             else:
 
                 issuances[d] = stored_issuances[d]
         if update_state:
-            print("## updating state {0} ##".format(CERTSPOTTER_PATH))
+            print("updating state {0}".format(CERTSPOTTER_PATH))
             with open(CERTSPOTTER_PATH, 'w') as outfile:
                 json.dump(issuances, outfile)
         else:
             print("## no changes ##")
     else:
-        print "## seems this is our first run .. certspotter state file not present ##"
-        print "## creating one at {0} ##".format(CERTSPOTTER_PATH)
+        print "seems this is our first run .. certspotter state file not present"
+        print "creating one at {0}".format(CERTSPOTTER_PATH)
         for d in domains:
             current_issuances = grab_issuances(apitoken,d,"")
             issuances[d] = current_issuances
 
         with open(CERTSPOTTER_PATH, 'w') as outfile:
             json.dump(issuances, outfile)
-
-
 
