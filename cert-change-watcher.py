@@ -50,9 +50,9 @@ def grab_issuances(apitoken,domain, last_id):
                 issuances.append(i)
     return issuances
 
-def sendslack(slackhook, domain, changes):
+def sendslack(slackhook, domain, issuances):
 
-    slack_data = {'text': ":lock: certificate changes have been detected for: {0}\n```{1}```\n".format(str(d),json.dumps(changes,indent=4))}
+    slack_data = {'text': ":lock: certificate changes have been detected for: {0}\n```{1}```\n".format(str(d),json.dumps(issuances,indent=4))}
 
     response = requests.post(
         slackhook, data=json.dumps(slack_data),
@@ -108,14 +108,13 @@ if __name__ == "__main__":
                 print(json.dumps(current_issuances, indent=4))
             
                 if slackhook:
-                    sendslack(slackhook,d,changes)
-                for i in changes:
+                    sendslack(slackhook,d,issuances)
+                for i in issuances:
                     print(json.dumps(i, indent=4))
                 issuances[d] = current_issuances
             else:
 
                 issuances[d] = stored_issuances[d]
-
         if update_state:
             print("## updating state {0} ##".format(CERTSPOTTER_PATH))
             with open(CERTSPOTTER_PATH, 'w') as outfile:
