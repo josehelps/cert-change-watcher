@@ -8,7 +8,16 @@ import re
 # temp file
 CERTSPOTTER_PATH = '.certspotter.json'
 
-def grab_issuances(apitoken,domain):
+def update_issuances(apitoken,domain,stored_issuances):
+    cert = stored_issuances[-1]
+    last_id = cert['id']
+
+    print ("Last ID ", last_id)
+    issuances = grab_issuances(apitoken,domain,last_id)
+
+    return issuances
+
+def grab_issuances(apitoken,domain, last_id):
     issuances = [] 
     url = "https://api.certspotter.com/v1/issuances"
     headers = {
@@ -16,15 +25,22 @@ def grab_issuances(apitoken,domain):
         'cache-control': "no-cache"
     }
     payload = ""
-    querystring = {"domain":domain,"expand":["dns_names","issuer"],"include_subdomains":"true"}
+    if last_id:
+        print ("last ID present running from ", last_id)
+        querystring = {"after":last_id, "domain":domain, "expand":["dns_names","issuer"], "include_subdomains":"true"}
+    else:
+        querystring = {"domain":domain,"expand":["dns_names","issuer"],"include_subdomains":"true"}
+
+    print ("final query string ", querystring)
     response = requests.request("GET", url, data=payload, headers=headers, params=querystring)
 
 
     # store for issuances 
     issuances = json.loads(response.text)
-
+    
     # grab subsequent pages
-    if response.headers['Link']:
+    while 'Link' in response.headers:
+        print ("processing subsequent pages: ", response.headers['Link'])
         m = re.search('</v1/issuances\?after=(\d+)\&.+', response.headers['Link'])
         if m:
             after = m.group(1)
@@ -33,74 +49,6 @@ def grab_issuances(apitoken,domain):
             for i in json.loads(response.text):
                 issuances.append(i)
     return issuances
-
-def is_changed(current_issuances,stored_issuances):
-    parsed_current = []
-    for cert in current_issuances:
-        certificate = dict()
-        domains = ','.join(cert['dns_names'])
-        certificate['domains'] = domains
-        certificate['issuer'] = cert['issuer']['name']
-        certificate['pubkey_sha256'] = cert['pubkey_sha256']
-        certificate['not_before'] = cert['not_before']
-        certificate['not_after'] = cert['not_after']
-        parsed_current.append(certificate)
-    
-    parsed_stored = []
-    for cert in stored_issuances:
-        certificate = dict()
-        domains = ','.join(cert['dns_names'])
-        certificate['domains'] = domains
-        certificate['issuer'] = cert['issuer']['name']
-        certificate['pubkey_sha256'] = cert['pubkey_sha256']
-        certificate['not_before'] = cert['not_before']
-        certificate['not_after'] = cert['not_after']
-        parsed_stored.append(certificate)
-
-    delta = list({dict2['domains'] for dict2 in parsed_stored} - 
-             {dict1['domains'] for dict1 in parsed_current})
-    delta_dict_domains = [{'domains': value} for value in delta]
-    
-    delta = list({dict2['issuer'] for dict2 in parsed_stored} - 
-             {dict1['issuer'] for dict1 in parsed_current})
-    delta_dict_issuer = [{'issuer': value} for value in delta]
-
-    change = dict()
-    changes = []
-    
-    if delta_dict_issuer:
-        change = dict()
-        for cert in parsed_current:
-            for i in delta_dict_issuer:
-                if cert['issuer'] == i['issuer']:
-                    change['message'] = "issuer has changed"
-                    change['certificate'] = cert 
-                    changes.append(change)
-        for cert in parsed_stored:
-            for i in delta_dict_issuer:
-                if cert['issuer'] == i['issuer']:
-                    change['message'] = "issuer has changed"
-                    change['certificate'] = cert 
-                    changes.append(change)
-    if delta_dict_domains:
-        change = dict()
-        for cert in parsed_current:
-            for d in delta_dict_domains:
-                if cert['domains'] == d['domains']:
-                    change['message'] = "domains have changed"
-                    change['certificate'] = cert 
-                    changes.append(change)
-        for cert in parsed_stored:
-            for d in delta_dict_domains:
-                if cert['domains'] == d['domains']:
-                    change['message'] = "domains have changed"
-                    change['certificate'] = cert 
-                    changes.append(change)
-
-    if len(changes) > 0:
-        return True, changes
-    else:
-        return False, changes
 
 def sendslack(slackhook, domain, changes):
 
@@ -136,24 +84,38 @@ if __name__ == "__main__":
     update_state = False
     # check if the phistank temp file has been updated recently
     if os.path.exists(CERTSPOTTER_PATH):
-        for d in domains:
-            current_issuances = grab_issuances(apitoken,d)
-            issuances[d] = current_issuances
 
+        # grab our state file
         with open(CERTSPOTTER_PATH) as f:
             stored_issuances = json.load(f)
 
         for d in domains:
-            ischanged, changes = is_changed(issuances[d], stored_issuances[d])
-            if ischanged:
+
+            # check if the domain passed is in our state file otherwise pull a state
+            if d not in stored_issuances:
+                update_state = True
+                print("## domain {0} has never been seen .. fetching state ##".format(d))
+                issuances[d] = grab_issuances(apitoken,d,"")
+                continue
+
+            # check for updates
+            current_issuances = update_issuances(apitoken,d,stored_issuances[d])
+
+            # if updates send alert, and otherwise just keep current state 
+            if len(current_issuances) > 0:
                 update_state = True
                 print("## domain {0} has changes: ##".format(d))
-
+                print(json.dumps(current_issuances, indent=4))
+            
                 if slackhook:
                     sendslack(slackhook,d,changes)
                 for i in changes:
                     print(json.dumps(i, indent=4))
-        
+                issuances[d] = current_issuances
+            else:
+
+                issuances[d] = stored_issuances[d]
+
         if update_state:
             print("## updating state {0} ##".format(CERTSPOTTER_PATH))
             with open(CERTSPOTTER_PATH, 'w') as outfile:
@@ -164,7 +126,7 @@ if __name__ == "__main__":
         print "## seems this is our first run .. certspotter state file not present ##"
         print "## creating one at {0} ##".format(CERTSPOTTER_PATH)
         for d in domains:
-            current_issuances = grab_issuances(apitoken,d)
+            current_issuances = grab_issuances(apitoken,d,"")
             issuances[d] = current_issuances
 
         with open(CERTSPOTTER_PATH, 'w') as outfile:
