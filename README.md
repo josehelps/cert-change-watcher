@@ -1,5 +1,5 @@
 # cert-change-watcher
-Sends a slack alert when it sees changes in your certificates. 
+Sends a slack alert when it sees changes in your certificates and save the change locally.
 
 * new or removed domains
 * changes in issuers
@@ -16,7 +16,8 @@ Sends a slack alert when it sees changes in your certificates.
 ## Usage
 
 ```
-cert-change-monitor.py [-h] -k APITOKEN [-s SLACKHOOK] -d DOMAINS
+usage: cert-change-watcher.py [-h] -k APITOKEN [-s SLACKHOOK] -d DOMAINS
+                              [-o OUTPUT]
 
 monitors certificate changes using cert spotter api and alerts to slack
 
@@ -29,6 +30,9 @@ optional arguments:
   -d DOMAINS, --domains DOMAINS
                         command delimited list of domains to monitor changes
                         for, example "splunk.com,elastic.com"
+  -o OUTPUT, --output OUTPUT
+                        outputs results in JSON to a localfile, defaults to
+                        results.json
 
 In order to use this tool you will need an API key from certspotter, and also
 provide the slack API web hook.
@@ -94,4 +98,46 @@ provide the slack API web hook.
 #### Send a slack alert with a change
 ```
 python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com" -s https://hooks.slack.com/services/xxx/xxxx
+```
+#### Example generated of JSON output `cat results.json | jq`
+
+```
+{
+  "timestamp": "2019-06-12T13:52:22.425827",
+  "changes": [
+    {
+      "id": "962016867",
+      "tbs_sha256": "br723a77a80949193f8e8cfc17ab5c30a4e634390e3d3947f3bbff17692aada9",
+      "dns_names": [
+        "*.lmao.splunkcloud.com",
+        "lmao.splunkcloud.com"
+      ],
+      "pubkey_sha256": "bw3e4db04e463857da56fa816d46900b8950d17e4fe0ed1fc961655fa079f07a",
+      "issuer": {
+        "name": "C=US, O=DigiCert Inc, CN=DigiCert SHA2 Secure Server CA",
+        "pubkey_sha256": "e6425f344330d0a8eb080bbb7976391d976fc824b5dc16c0d15246d5148ff75c"
+      },
+      "not_before": "2019-06-11T00:00:00-00:00",
+      "not_after": "2020-06-15T12:00:00-00:00"
+    },
+    {
+      "id": "963468680",
+      "tbs_sha256": "720c53fe88fcd324b16396341c92689efb59a9cac90f26a40cf57a76c37348c3",
+      "dns_names": [
+        "*.old.splunkcloud.com",
+        "old.splunkcloud.com",
+        "*.es-road.splunkcloud.com",
+        "es-road.splunkcloud.com"
+      ],
+      "pubkey_sha256": "e0b33306448cd8b1aaeb313d2ed372a390db2453b5504t50018cce962293d893",
+      "issuer": {
+        "name": "C=US, O=DigiCert Inc, CN=DigiCert SHA2 Secure Server CA",
+        "pubkey_sha256": "e6426f344330d0a8eb080bbb7976391d976fc814b5dc16c0d15246d5148ff75c"
+      },
+      "not_before": "2019-06-12T00:00:00-00:00",
+      "not_after": "2020-06-16T12:00:00-00:00"
+    }
+  ],
+  "domain": "splunkcloud.com"
+}
 ```
