@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--apitoken", required=True, help="api token for cert spotter, example 1234_adfdafasfdas")
     parser.add_argument("-s", "--slackhook", required=False, default="", help="slack web hook to notify of changes")
     parser.add_argument("-d", "--domains", required=True, default="", help="command delimited list of domains to monitor changes for, example \"splunk.com,elastic.com\"")
-    parser.add_argument("-o", "--output", required=False, default="results.json", help="outputs results in JSON to a localfile")
+    parser.add_argument("-o", "--output", required=False, default="results.json", help="outputs results in JSON to a localfile, defaults to results.json")
 
     # parse them
     args = parser.parse_args()
