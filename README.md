@@ -11,7 +11,7 @@ Sends a slack alert when it sees changes in your certificates.
 # Installation
 1. Get a API key from: https://sslmate.com/certspotter/
 2. `git clone https://github.com/d1vious/cert-change-watcher.git`
-3. `cd cert-change-watcher && virtualenv venv && source venv/bin/activate && pip install -r requirements.txt`
+3. `cd cert-change-watcher && virtualenv venv -p python3 && source venv/bin/activate && pip install -r requirements.txt`
 
 ## Usage
 

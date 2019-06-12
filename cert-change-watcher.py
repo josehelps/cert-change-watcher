@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import datetime
 
 # temp file
 CERTSPOTTER_PATH = '.certspotter.json'
@@ -70,12 +71,13 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--apitoken", required=True, help="api token for cert spotter, example 1234_adfdafasfdas")
     parser.add_argument("-s", "--slackhook", required=False, default="", help="slack web hook to notify of changes")
     parser.add_argument("-d", "--domains", required=True, default="", help="command delimited list of domains to monitor changes for, example \"splunk.com,elastic.com\"")
+    parser.add_argument("-o", "--output", required=False, default="results.json", help="outputs results in JSON to a localfile")
 
     # parse them
     args = parser.parse_args()
     apitoken = args.apitoken
     slackhook = args.slackhook
-    slackhook = args.slackhook
+    output = args.output
     domains = args.domains.split(',')
 
     issuances = dict()
@@ -104,6 +106,14 @@ if __name__ == "__main__":
                 update_state = True
                 print("## domain {0} has changes: ##".format(d))
                 print(json.dumps(current_issuances, indent=4))
+
+                # write results to output file
+                result = dict()
+                result['timestamp'] = str(datetime.datetime.utcnow().isoformat())
+                result['changes'] = current_issuances
+                result['domain'] = d
+                with open(output, 'w') as outfile:
+                    json.dump(result, outfile)
             
                 # send slack notification 
                 if slackhook:
@@ -120,8 +130,8 @@ if __name__ == "__main__":
         else:
             print("## no changes ##")
     else:
-        print "seems this is our first run .. certspotter state file not present"
-        print "creating one at {0}".format(CERTSPOTTER_PATH)
+        print ("seems this is our first run .. certspotter state file not present")
+        print ("creating one at {0}".format(CERTSPOTTER_PATH))
         for d in domains:
             current_issuances = grab_issuances(apitoken,d,"")
             issuances[d] = current_issuances
