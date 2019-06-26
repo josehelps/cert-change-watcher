@@ -1,9 +1,10 @@
 # cert-change-watcher
-Sends a slack alert when it sees changes in your certificates and save the change locally.
+Sends a slack alert when it sees changes in your certificates and save the change locally. It can also do a shodan scan on the domain that changed and return those results on the slack message. 
 
 * new or removed domains
 * changes in issuers
 * new certificates for subdomains
+* scans domains with shodan to see what ports/protocols and technologies are expose
 
 ![example](static/slackexample.png)
 
@@ -16,8 +17,8 @@ Sends a slack alert when it sees changes in your certificates and save the chang
 ## Usage
 
 ```
-usage: cert-change-watcher.py [-h] -k APITOKEN [-s SLACKHOOK] -d DOMAINS
-                              [-o OUTPUT]
+usage: cert-change-watcher.py [-h] -k APITOKEN [-s SLACKHOOK] [-sh SHODAN] -d
+                              DOMAINS [-o OUTPUT]
 
 monitors certificate changes using cert spotter api and alerts to slack
 
@@ -27,6 +28,8 @@ optional arguments:
                         api token for cert spotter, example 1234_adfdafasfdas
   -s SLACKHOOK, --slackhook SLACKHOOK
                         slack web hook to notify of changes
+  -sh SHODAN, --shodan SHODAN
+                        shodan api key, to add shodan scan results to alert
   -d DOMAINS, --domains DOMAINS
                         command delimited list of domains to monitor changes
                         for, example "splunk.com,elastic.com"
@@ -99,6 +102,12 @@ provide the slack API web hook.
 ```
 python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com" -s https://hooks.slack.com/services/xxx/xxxx
 ```
+
+#### Send a slack alert and scan with shodan
+```
+python cert-change-watcher.py -k $CERTSPOTTER_TOKEN -d "splunk.com,elastic.com" -s https://hooks.slack.com/services/xxx/xxxx -sh $SHODAN_API_TOKEN
+```
+
 #### Example generated of JSON output `cat results.json | jq`
 
 ```
