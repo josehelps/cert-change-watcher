@@ -271,25 +271,28 @@ if __name__ == "__main__":
                 print("## domain {0} has changes: ##".format(d))
                 print(json.dumps(current_issuances, indent=4))
 
-                # write results to output file
-                result = dict()
-                result['timestamp'] = str(datetime.datetime.utcnow().isoformat())
-                result['changes'] = current_issuances
-                result['domain'] = d
-                with open(output, 'w') as outfile:
-                    json.dump(result, outfile)
-
                 # run shodan scan if requested
                 shodan_results = []
+                shodan_domain = dict()
                 if shodan:
                     for i in current_issuances:
                         for dns in i['dns_names']:
                             shodan_results = shodan_scan(shodan, dns)
+                            shodan_domain[dns] = shodan_results
                             for s in shodan_results:
                                 print ("## domain {0} - protocols detected: {1}".format(dns, s['protocols']))
                                 print ("## domain {0} - ports detected: {1}".format(dns, s['ports']))
                                 print ("## domain {0} - server header: {1}".format(dns, s['servers']))
                                 print ("## domain {0} - components: {1}".format(dns, s['components']))
+
+                # write results to output file
+                result = dict()
+                result['timestamp'] = str(datetime.datetime.utcnow().isoformat())
+                result['changes'] = current_issuances
+                result['domain'] = d
+                result['shodan_results'] = shodan_domain
+                with open(output, 'w') as outfile:
+                    json.dump(result, outfile)
 
                 # send slack notification
                 if slackhook:
