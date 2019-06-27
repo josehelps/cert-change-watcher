@@ -88,15 +88,21 @@ def shodan_scan(shoda_api_token, domain):
     if "DONE" == scan['status']:
         print ("## domain {0} - shodan completed scanning".format(domain))
         for banner in api.search_cursor('scan:{}'.format("XR8Ioe2oN7jeWkPJ")):
-
             domain = banner['_shodan']['options']['hostname']
+
+            site = dict()
+            site['domain'] = domain
+            site['server'] = []
+            site['components'] = []
+            site['protocols'] = []
+            site['ports'] = []
+
             if len(sites) != 0:
-                site = dict()
                 for s in sites:
                     if s['domain'] == domain:
                         # if we already processed the scanned domain lets just add to it
-                        site['protocols'].append(banner['_shodan']['module'])
-                        site['ports'].append(banner['port'])
+                        s['protocols'].append(banner['_shodan']['module'])
+                        s['ports'].append(banner['port'])
                         if "http" == banner['_shodan']['module'] or "https" == banner['_shodan']['module']:
                             s['server'].append(banner['http']['server'])
                             if 'components' in banner['http']:
@@ -104,12 +110,6 @@ def shodan_scan(shoda_api_token, domain):
                     else:
                         # otherwise lets process the scanned domain
                         print("## domain {0} - shodan processing site".format(domain))
-                        site = dict()
-                        site['domain'] = domain
-                        site['server'] = []
-                        site['components'] = []
-                        site['protocols'] = []
-                        site['ports'] = []
                         site['protocols'].append(banner['_shodan']['module'])
                         site['ports'].append(banner['port'])
                         site['hosting_org'] = banner['org']
@@ -123,12 +123,6 @@ def shodan_scan(shoda_api_token, domain):
             else:
                 # this is our first time on this domain lets process it
                 print("## domain {0} - shodan processing site".format(domain))
-                site = dict()
-                site['domain'] = domain
-                site['server'] = []
-                site['components'] = []
-                site['protocols'] = []
-                site['ports'] = []
                 site['protocols'].append(banner['_shodan']['module'])
                 site['ports'].append(banner['port'])
                 site['hosting_org'] = banner['org']
@@ -274,16 +268,20 @@ if __name__ == "__main__":
                 # run shodan scan if requested
                 shodan_results = []
                 shodan_domain = dict()
+
                 if shodan:
-                    for i in current_issuances:
-                        for dns in i['dns_names']:
-                            shodan_results = shodan_scan(shodan, dns)
-                            shodan_domain[dns] = shodan_results
-                            for s in shodan_results:
-                                print ("## domain {0} - protocols detected: {1}".format(dns, s['protocols']))
-                                print ("## domain {0} - ports detected: {1}".format(dns, s['ports']))
-                                print ("## domain {0} - server header: {1}".format(dns, s['servers']))
-                                print ("## domain {0} - components: {1}".format(dns, s['components']))
+                    for domain_name, issuances_list in current_issuances.items():
+                        for i in issuances_list:
+                            print (i['dns_names'])
+
+                            for dns in i['dns_names']:
+                                shodan_results = shodan_scan(shodan, dns)
+                                shodan_domain[dns] = shodan_results
+                                for s in shodan_results:
+                                    print ("## domain {0} - protocols detected: {1}".format(dns, s['protocols']))
+                                    print ("## domain {0} - ports detected: {1}".format(dns, s['ports']))
+                                    print ("## domain {0} - server header: {1}".format(dns, s['servers']))
+                                    print ("## domain {0} - components: {1}".format(dns, s['components']))
 
                 # write results to output file
                 result = dict()
